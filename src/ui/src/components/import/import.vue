@@ -1,61 +1,60 @@
-/*
- * Tencent is pleased to support the open source community by making 蓝鲸 available.
- * Copyright (C) 2017-2018 THL A29 Limited, a Tencent company. All rights reserved.
- * Licensed under the MIT License (the "License"); you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at http://opensource.org/licenses/MIT
- * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and limitations under the License.
- */
-
-<template lang="html">
-    <div>
-        <div class="up-file upload-file" v-bkloading="{isLoading: isLoading}">
-            <img src="../../common/images/up_file.png">
-            <input ref="fileInput" type="file" class="fullARea" @change.prevent="handleFile"/>
-            <i18n path="Inst['导入提示']" tag="p" :places="{allowType: allowType.join(','), maxSize: maxSize}">
-                <b place="clickUpload">{{$t("Inst['点击上传']")}}</b>
+<template>
+    <div class="import-wrapper">
+        <div class="up-file upload-file" v-bkloading="{ isLoading: isLoading }">
+            <img src="../../assets/images/up_file.png">
+            <input ref="fileInput" type="file" class="fullARea" @change.prevent="handleFile" />
+            <i18n path="导入提示" tag="p" :places="{ allowType: allowType.join(','), maxSize: maxSize }">
+                <b place="clickUpload">{{$t('点击上传')}}</b>
                 <br place="breakRow">
             </i18n>
         </div>
-        <div :class="['upload-file-info', {'success': uploaded}, {'fail': failed}]">
+        <div :class="['upload-file-info', { 'uploading': isLoading }, { 'fail': failed }, { 'uploaded': !isLoading }]">
             <div class="upload-file-name">{{fileInfo.name}}</div>
             <div class="upload-file-size fr">{{fileInfo.size}}</div>
             <div class="upload-file-status" hidden>{{fileInfo.status}}</div>
             <div class="upload-file-status-icon" hidden>
-                <i :class="['bk-icon ',{'icon-check-circle-shape':uploaded,'icon-close-circle-shape':failed}]"></i>
+                <i :class="['bk-icon ',{ 'icon-check-circle-shape': uploaded,'icon-close-circle-shape': failed }]"></i>
             </div>
         </div>
-        <div class="upload-details" v-if="(uploadResult.success && uploadResult.success.length) || (uploadResult.error && uploadResult.error.length) || (uploadResult.update_error && uploadResult.update_error.length)">
+        <div class="upload-details" v-if="hasUploadError()">
             <div class="upload-details-success" v-if="uploadResult.success && uploadResult.success.length">
                 <i class="bk-icon icon-check-circle-shape"></i>
-                <span>{{$t("Inst['成功上传N条数据']", {N: uploadResult.success.length})}}</span>
+                <span>{{$t('成功上传N条数据', { N: uploadResult.success.length })}}</span>
             </div>
             <!-- 上传失败列表  -->
             <div class="upload-details-fail" v-if="uploadResult.error && uploadResult.error.length">
                 <div class="upload-details-fail-title">
                     <i class="bk-icon icon-close-circle-shape"></i>
-                    <span>{{$t("Inst['上传失败列表']")}}({{uploadResult.error.length}})</span>
+                    <span>{{$t('上传失败列表')}}({{uploadResult.error.length}})</span>
                 </div>
                 <ul ref="failList" class="upload-details-fail-list">
-                    <li v-for="(errorMsg, index) in uploadResult.error" :title="errorMsg">{{errorMsg}}</li>
+                    <li v-for="(errorMsg, index) in uploadResult.error" :title="errorMsg" :key="index">{{errorMsg}}</li>
                 </ul>
             </div>
             <div class="upload-details-fail" v-if="uploadResult.update_error && uploadResult.update_error.length">
                 <div class="upload-details-fail-title">
                     <i class="bk-icon icon-close-circle-shape"></i>
-                    <span>{{$t("Inst['更新失败列表']")}}({{uploadResult.update_error.length}})</span>
+                    <span>{{$t('更新失败列表')}}({{uploadResult.update_error.length}})</span>
                 </div>
                 <ul ref="failList" class="upload-details-fail-list">
-                    <li v-for="(errorMsg, index) in uploadResult.update_error" :title="errorMsg">{{errorMsg}}</li>
+                    <li v-for="(errorMsg, index) in uploadResult.update_error" :title="errorMsg" :key="index">{{errorMsg}}</li>
+                </ul>
+            </div>
+            <div class="upload-details-fail" v-if="uploadResult.asst_error && uploadResult.asst_error.length">
+                <div class="upload-details-fail-title">
+                    <i class="bk-icon icon-close-circle-shape"></i>
+                    <span>关联关系导入失败列表({{uploadResult.asst_error.length}})</span>
+                </div>
+                <ul ref="failList" class="upload-details-fail-list">
+                    <li v-for="(errorMsg, index) in uploadResult.asst_error" :title="errorMsg" :key="index">{{errorMsg}}</li>
                 </ul>
             </div>
         </div>
         <div class="clearfix down-model-content">
             <slot name="download-desc"></slot>
-            <a :href="templateUrl" style="text-decoration: none;">
-                <img src="../../common/images/icon/down_model_icon.png" alt="">
-                <span class="submit-btn">{{$t("Inst['下载模版']")}}</span>
+            <a href="javascript:void(0);" style="text-decoration: none;" @click="handleDownloadTemplate">
+                <img src="../../assets/images/icon/down_model_icon.png">
+                <span class="submit-btn">{{$t('下载模板')}}</span>
             </a>
         </div>
     </div>
@@ -67,6 +66,18 @@
             templateUrl: {
                 type: String,
                 required: true
+            },
+            downloadPayload: {
+                type: Object,
+                default () {
+                    return {}
+                }
+            },
+            importPayload: {
+                type: Object,
+                default () {
+                    return {}
+                }
             },
             importUrl: {
                 type: String,
@@ -96,7 +107,8 @@
                 uploadResult: {
                     success: null,
                     error: null,
-                    update_error: null
+                    update_error: null,
+                    asst_error: null
                 }
             }
         },
@@ -108,42 +120,48 @@
         methods: {
             handleFile (e) {
                 this.reset()
-                let files = e.target.files
-                let fileInfo = files[0]
+                const files = e.target.files
+                const fileInfo = files[0]
                 if (!this.allowTypeRegExp.test(fileInfo.name)) {
                     this.$refs.fileInput.value = ''
-                    this.$alertMsg(this.$t("Inst['文件格式非法']", {allowType: this.allowType.join(',')}))
+                    this.$error(this.$t('文件格式非法', { allowType: this.allowType.join(',') }))
                     return false
                 } else if (fileInfo.size / 1024 > this.maxSize) {
                     this.$refs.fileInput.value = ''
-                    this.$alertMsg(this.$t("Inst['文件大小溢出']", {maxSize: this.maxSize}))
+                    this.$error(this.$t('文件大小溢出', { maxSize: this.maxSize }))
                     return false
                 } else {
                     this.fileInfo.name = fileInfo.name
                     this.fileInfo.size = `${(fileInfo.size / 1024).toFixed(2)}kb`
-                    let formData = new FormData()
+                    const formData = new FormData()
                     formData.append('file', files[0])
+                    if (this.importPayload.hasOwnProperty('metadata')) {
+                        formData.append('metadata', JSON.stringify(this.importPayload.metadata))
+                    }
                     this.isLoading = true
-                    this.$axios.post(this.importUrl, formData).then(res => {
-                        this.uploadResult = Object.assign(this.uploadResult, res.data || {success: null, error: null, update_error: null})
+                    this.$http.post(this.importUrl, formData, { transformData: false, globalError: false }).then(res => {
+                        const defaultResult = {
+                            success: null,
+                            error: null,
+                            update_error: null,
+                            asst_error: null
+                        }
+                        this.uploadResult = Object.assign(this.uploadResult, res.data || defaultResult)
                         if (res.result) {
                             this.uploaded = true
-                            this.fileInfo.status = this.$t("Inst['成功']")
+                            this.fileInfo.status = this.$t('成功')
                             this.$emit('success', res)
                         } else if (res.data && res.data.success) {
                             this.failed = true
-                            this.fileInfo.status = this.$t("Inst['部分成功']")
+                            this.fileInfo.status = this.$t('部分成功')
                             this.$emit('partialSuccess', res)
                         } else {
                             this.failed = true
-                            this.fileInfo.status = this.$t("Inst['失败']")
-                            this.$alertMsg(res['bk_error_msg'])
+                            this.fileInfo.status = this.$t('失败')
+                            this.$error(res['bk_error_msg'])
                             this.$emit('error', res)
                         }
                         this.$refs.fileInput.value = ''
-                        this.$nextTick(() => {
-                            this.calcFailListHeight()
-                        })
                         this.isLoading = false
                     }).catch(error => {
                         this.reset()
@@ -152,19 +170,12 @@
                     })
                 }
             },
-            calcFailListHeight () {
-                const failListOffsetHeight = 550
-                const maxHeight = document.body.getBoundingClientRect().height - failListOffsetHeight
-                let failList = this.$refs.failList
-                if (failList) {
-                    if (Array.isArray(failList)) {
-                        failList.map(list => {
-                            list.style.maxHeight = `${maxHeight / failList.length}px`
-                        })
-                    } else {
-                        failList.style.maxHeight = `${maxHeight}px`
-                    }
-                }
+            hasUploadError () {
+                const uploadResult = this.uploadResult
+                return (uploadResult.success && uploadResult.success.length)
+                    || (uploadResult.error && uploadResult.error.length)
+                    || (uploadResult.update_error && uploadResult.update_error.length)
+                    || (uploadResult.asst_error && uploadResult.asst_error.length)
             },
             reset () {
                 this.uploaded = false
@@ -177,7 +188,30 @@
                 this.uploadResult = {
                     success: null,
                     error: null,
-                    update_error: null
+                    update_error: null,
+                    asst_error: null
+                }
+            },
+            async handleDownloadTemplate () {
+                try {
+                    let data = this.downloadPayload
+                    if (!(data instanceof FormData)) {
+                        data = new FormData()
+                        Object.keys(this.downloadPayload).forEach(key => {
+                            const value = this.downloadPayload[key]
+                            if (typeof value === 'object') {
+                                data.append(key, JSON.stringify(value))
+                            } else {
+                                data.append(key, value)
+                            }
+                        })
+                    }
+                    this.$http.download({
+                        url: this.templateUrl,
+                        data: data
+                    })
+                } catch (e) {
+                    console.log(e)
                 }
             }
         }
@@ -185,6 +219,10 @@
 </script>
 
 <style media="screen" lang="scss" scoped>
+    .import-wrapper {
+        height: 100%;
+        @include scrollbar-y;
+    }
     .up-file{
         .up-file-text{
             p{
@@ -294,20 +332,16 @@
             height: 100%;
         }
 
-        &.success {
-            background:#f9f9f9;
+        &.uploading {
             &:before {
-                content: '';
-                position: absolute;
-                left: 0;
-                top: 0;
-                width: 100%;
-                height: 100%;
                 background: #e3f5eb;
-                -webkit-transition: all .5s;
-                transition: all .5s;
+                width: 100%;
+                transition: width 30s;
             }
+        }
 
+        &.uploaded {
+            background: #e3f5eb;
         }
 
         &.fail {
@@ -380,13 +414,6 @@
                 font-size: 12px;
                 white-space: nowrap;
                 overflow: auto;
-                &::-webkit-scrollbar{
-                    width: 6px;
-                }
-                &::-webkit-scrollbar-thumb{
-                    border-radius: 3px;
-                    background: #c7cee3;
-                }
                 li{
                     padding: 0 43px;
                     overflow: hidden;

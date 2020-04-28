@@ -13,64 +13,82 @@
 package util
 
 import (
-	"net/http"
-	"reflect"
+	"fmt"
 
 	"configcenter/src/apimachinery/discovery"
 	"configcenter/src/apimachinery/flowctrl"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 type APIMachineryConfig struct {
-    // the address of zookeeper address, comma separated.
-    ZkAddr string
-    // request's qps value
-    QPS int64
-    // request's burst value
-    Burst int64
-    TLSConfig *TLSClientConfig
-}
-
-type HttpClient interface {
-	Do(req *http.Request) (*http.Response, error)
+	// request's qps value
+	QPS int64
+	// request's burst value
+	Burst     int64
+	TLSConfig *TLSClientConfig
 }
 
 type Capability struct {
 	Client   HttpClient
 	Discover discovery.Interface
 	Throttle flowctrl.RateLimiter
+	Mock     MockInfo
+	Reg      prometheus.Registerer
 }
 
-// Attention: all the fields must be string, or the ToHeader method will be panic.
-// the struct filed tag is the key of header, and the header's value is the struct
-// filed value.
-type Headers struct {
-	Language string `HTTP_BLUEKING_LANGUAGE`
-	User     string `BK_User`
-	OwnerID  string `HTTP_BLUEKING_SUPPLIER_ID`
-}
-
-func (h Headers) ToHeader() http.Header {
-	header := make(http.Header)
-
-	valueof := reflect.ValueOf(h)
-	for i := 0; i < valueof.NumField(); i++ {
-		k := reflect.TypeOf(h).Field(i).Tag
-		v := valueof.Field(i).String()
-		header[string(k)] = []string{v}
-	}
-
-	return header
+type MockInfo struct {
+	Mocked      bool
+	SetMockData bool
+	MockData    interface{}
 }
 
 type TLSClientConfig struct {
-    // Server should be accessed without verifying the TLS certificate. For testing only.
-    InsecureSkipVerify bool
-    // Server requires TLS client certificate authentication
-    CertFile string
-    // Server requires TLS client certificate authentication
-    KeyFile string
-    // Trusted root certificates for server
-    CAFile string
-    // the password to decrypt the certificate
-    Password string
+	// Server should be accessed without verifying the TLS certificate. For testing only.
+	InsecureSkipVerify bool
+	// Server requires TLS client certificate authentication
+	CertFile string
+	// Server requires TLS client certificate authentication
+	KeyFile string
+	// Trusted root certificates for server
+	CAFile string
+	// the password to decrypt the certificate
+	Password string
+}
+
+func NewTLSClientConfigFromConfig(prefix string, config map[string]string) (TLSClientConfig, error) {
+	tlsConfig := TLSClientConfig{}
+
+	skipVerifyKey := fmt.Sprintf("%s.insecure_skip_verify", prefix)
+	skipVerifyVal, ok := config[skipVerifyKey]
+	if ok == true {
+		if skipVerifyVal == "true" {
+			tlsConfig.InsecureSkipVerify = true
+		}
+	}
+
+	certFileKey := fmt.Sprintf("%s.cert_file", prefix)
+	certFileVal, ok := config[certFileKey]
+	if ok == true {
+		tlsConfig.CertFile = certFileVal
+	}
+
+	keyFileKey := fmt.Sprintf("%s.key_file", prefix)
+	keyFileVal, ok := config[keyFileKey]
+	if ok == true {
+		tlsConfig.KeyFile = keyFileVal
+	}
+
+	caFileKey := fmt.Sprintf("%s.ca_file", prefix)
+	caFileVal, ok := config[caFileKey]
+	if ok == true {
+		tlsConfig.CAFile = caFileVal
+	}
+
+	passwordKey := fmt.Sprintf("%s.password", prefix)
+	passwordVal, ok := config[passwordKey]
+	if ok == true {
+		tlsConfig.Password = passwordVal
+	}
+
+	return tlsConfig, nil
 }

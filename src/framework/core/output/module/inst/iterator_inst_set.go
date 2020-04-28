@@ -14,7 +14,7 @@ package inst
 
 import (
 	"configcenter/src/framework/common"
-	//"configcenter/src/framework/core/log"
+	//"configcenter/src/framework/logics/log"
 	"configcenter/src/framework/core/output/module/client"
 	"configcenter/src/framework/core/output/module/model"
 	"configcenter/src/framework/core/types"
@@ -34,7 +34,7 @@ type iteratorInstSet struct {
 	bufIdx      int
 }
 
-func newIteratorInstSet(target model.Model, cond common.Condition) (SetIterator, error) {
+func NewIteratorInstSet(target model.Model, cond common.Condition) (SetIterator, error) {
 
 	iter := &iteratorInstSet{
 		targetModel: target,

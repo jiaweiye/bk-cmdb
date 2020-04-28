@@ -13,7 +13,6 @@
 package errors
 
 import (
-	"configcenter/src/common/blog"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -21,6 +20,8 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	"configcenter/src/common/blog"
 )
 
 // ccErrorHelper CC 错误处理接口的实现
@@ -31,9 +32,11 @@ type ccErrorHelper struct {
 // CreateDefaultCCErrorIf create the default cc error interface instance
 func (cli *ccErrorHelper) CreateDefaultCCErrorIf(language string) DefaultCCErrorIf {
 	return &ccDefaultErrorHelper{
-		language:  language,
-		errorStr:  cli.Error,
-		errorStrf: cli.Errorf,
+		language:    language,
+		errorStr:    cli.Error,
+		errorStrf:   cli.Errorf,
+		ccErrorStr:  cli.CCError,
+		ccErrorStrf: cli.CCErrorf,
 	}
 }
 
@@ -51,9 +54,23 @@ func (cli *ccErrorHelper) Errorf(language string, ErrorCode int, args ...interfa
 	}}
 }
 
+// CCError returns an error that adapt to the error interface which not accepts arguments
+func (cli *ccErrorHelper) CCError(language string, errCode int) CCErrorCoder {
+	return &ccError{code: errCode, callback: func() string {
+		return cli.errorStr(language, errCode)
+	}}
+}
+
+// Errorf returns an error that adapt to the error interface which accepts arguments
+func (cli *ccErrorHelper) CCErrorf(language string, ErrorCode int, args ...interface{}) CCErrorCoder {
+	return &ccError{code: ErrorCode, callback: func() string {
+		return cli.errorStrf(language, ErrorCode, args...)
+	}}
+}
+
 // load load language package file from dir
 func (cli *ccErrorHelper) Load(errcode map[string]ErrorCode) {
-	blog.InfoJSON("loaded error resource: %s", errcode)
+	// blog.V(3).Infof("loaded error resource: %#v", errcode)
 	cli.errCode = errcode
 }
 
@@ -76,8 +93,7 @@ func LoadErrorResourceFromDir(dir string) (map[string]ErrorCode, error) {
 		items := strings.Split(path, string(os.PathSeparator))
 		language := items[len(items)-2 : len(items)-1]
 
-		// analysis language package file
-		fmt.Printf("loading language from %s\n", path)
+		// analysis error package file
 		data, rerr := ioutil.ReadFile(path)
 		if nil != rerr {
 			return rerr

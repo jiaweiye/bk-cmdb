@@ -1,33 +1,23 @@
 'use strict'
-require('./custom-env')
 require('./check-versions')()
+
 process.env.NODE_ENV = 'production'
 
-const ora = require('ora')
 const rm = require('rimraf')
 const path = require('path')
 const chalk = require('chalk')
 const webpack = require('webpack')
 const config = require('../config')
-
-if (process.env.BUILD_ENV == 'product') {
-    var webpackConfig = require('./webpack.prod.conf')
-} else {
-    var webpackConfig = require('./webpack.dev.conf')
-}
-
-const spinner = ora('building for ' + process.env.BUILD_ENV + '...')
-spinner.start()
+const webpackConfig = require('./webpack.prod.conf')
 
 rm(path.join(config.build.assetsRoot, config.build.assetsSubDirectory), err => {
   if (err) throw err
-  webpack(webpackConfig, function (err, stats) {
-    spinner.stop()
+  webpack(webpackConfig, (err, stats) => {
     if (err) throw err
     process.stdout.write(stats.toString({
       colors: true,
       modules: false,
-      children: false,
+      children: false, // If you are using ts-loader, setting this to true will make TypeScript errors show up during build.
       chunks: false,
       chunkModules: false
     }) + '\n\n')

@@ -14,64 +14,64 @@ package inst
 
 import (
 	"context"
-	"fmt"
+	"net/http"
 
-	"configcenter/src/apimachinery/util"
-	"configcenter/src/common/core/cc/api"
+	"configcenter/src/common/mapstr"
+	"configcenter/src/common/metadata"
 	"configcenter/src/common/paraparse"
 )
 
-func (t *instanceClient) CreateSet(ctx context.Context, appID string, h util.Headers, dat map[string]interface{}) (resp *api.BKAPIRsp, err error) {
-	resp = new(api.BKAPIRsp)
-	subPath := fmt.Sprintf("/set/%s", appID)
+func (t *instanceClient) CreateSet(ctx context.Context, appID string, h http.Header, dat mapstr.MapStr) (resp *metadata.CreateInstResult, err error) {
+	resp = new(metadata.CreateInstResult)
+	subPath := "/set/%s"
 
 	err = t.client.Post().
 		WithContext(ctx).
 		Body(dat).
-		SubResource(subPath).
-		WithHeaders(h.ToHeader()).
+		SubResourcef(subPath, appID).
+		WithHeaders(h).
 		Do().
 		Into(resp)
 	return
 }
 
-func (t *instanceClient) DeleteSet(ctx context.Context, appID string, setID string, h util.Headers) (resp *api.BKAPIRsp, err error) {
-	resp = new(api.BKAPIRsp)
-	subPath := fmt.Sprintf("/set/%s/%s", appID, setID)
+func (t *instanceClient) DeleteSet(ctx context.Context, appID string, setID string, h http.Header) (resp *metadata.Response, err error) {
+	resp = new(metadata.Response)
+	subPath := "/set/%s/%s"
 
 	err = t.client.Delete().
 		WithContext(ctx).
 		Body(nil).
-		SubResource(subPath).
-		WithHeaders(h.ToHeader()).
+		SubResourcef(subPath, appID, setID).
+		WithHeaders(h).
 		Do().
 		Into(resp)
 	return
 }
 
-func (t *instanceClient) UpdateSet(ctx context.Context, appID string, setID string, h util.Headers, dat map[string]interface{}) (resp *api.BKAPIRsp, err error) {
-	resp = new(api.BKAPIRsp)
-	subPath := fmt.Sprintf("/set/%s/%s", appID, setID)
+func (t *instanceClient) UpdateSet(ctx context.Context, appID string, setID string, h http.Header, dat map[string]interface{}) (resp *metadata.Response, err error) {
+	resp = new(metadata.Response)
+	subPath := "/set/%s/%s"
 
 	err = t.client.Put().
 		WithContext(ctx).
 		Body(dat).
-		SubResource(subPath).
-		WithHeaders(h.ToHeader()).
+		SubResourcef(subPath, appID, setID).
+		WithHeaders(h).
 		Do().
 		Into(resp)
 	return
 }
 
-func (t *instanceClient) SearchSet(ctx context.Context, ownerID string, appID string, h util.Headers, s *params.SearchParams) (resp *api.BKAPIRsp, err error) {
-	resp = new(api.BKAPIRsp)
-	subPath := fmt.Sprintf("/set/search/%s/%s", ownerID, appID)
+func (t *instanceClient) SearchSet(ctx context.Context, ownerID string, appID string, h http.Header, s *params.SearchParams) (resp *metadata.SearchInstResult, err error) {
+	resp = new(metadata.SearchInstResult)
+	subPath := "/set/search/%s/%s"
 
 	err = t.client.Post().
 		WithContext(ctx).
 		Body(s).
-		SubResource(subPath).
-		WithHeaders(h.ToHeader()).
+		SubResourcef(subPath, ownerID, appID).
+		WithHeaders(h).
 		Do().
 		Into(resp)
 	return

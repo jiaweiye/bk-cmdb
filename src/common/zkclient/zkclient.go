@@ -24,9 +24,10 @@ import (
 )
 
 var (
-	ErrNoNode        = zk.ErrNoNode
-	EventNodeDeleted = zk.EventNodeDeleted
-	ErrNodeExists    = zk.ErrNodeExists
+	ErrNoNode           = zk.ErrNoNode
+	EventNodeDeleted    = zk.EventNodeDeleted
+	ErrNodeExists       = zk.ErrNodeExists
+	ErrConnectionClosed = zk.ErrConnectionClosed
 )
 
 const (
@@ -141,6 +142,7 @@ func (z *ZkClient) ConnectEx(sessionTimeOut time.Duration) error {
 func (z *ZkClient) Close() {
 	if nil != z.ZkConn {
 		z.ZkConn.Close()
+		z.ZkConn = nil
 	}
 }
 
@@ -378,14 +380,14 @@ func (z *ZkClient) CheckMulNode(path string, data []byte) error {
 func (z *ZkClient) GetAll2Json(path string) (string, error) {
 	childs, err := z.GetChildren(path)
 	if err != nil {
-		//blog.Warn("fail to get children from path(%s). err:%s", path, err.Error())
+		//blog.Warnf("fail to get children from path(%s). err:%s", path, err.Error())
 		return "", err
 	}
 
 	if len(childs) <= 0 {
 		ctx, getErr := z.Get(path)
 		if getErr != nil {
-			//blog.Warn("fail to get value from path(%s), err:%s", path, err.Error())
+			//blog.Warnf("fail to get value from path(%s), err:%s", path, err.Error())
 			return "", getErr
 		}
 
@@ -398,11 +400,11 @@ func (z *ZkClient) GetAll2Json(path string) (string, error) {
 		chPath := path + "/" + child
 		val, _ := z.GetAll2Json(chPath)
 		mpChilds[child] = val
-		//blog.Info("children path(%s), value(%s)", chPath, val)
+		//blog.Infof("children path(%s), value(%s)", chPath, val)
 	}
 
 	data, err := json.Marshal(mpChilds)
 
-	//blog.Info("data:%s", string(data))
+	//blog.Infof("data:%s", string(data))
 	return string(data), err
 }

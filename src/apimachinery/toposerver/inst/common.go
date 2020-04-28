@@ -14,36 +14,47 @@ package inst
 
 import (
 	"context"
-	"fmt"
+	"net/http"
 
-	"configcenter/src/apimachinery/util"
-	"configcenter/src/common/core/cc/api"
-	"configcenter/src/source_controller/common/commondata"
+	"configcenter/src/common/metadata"
 )
 
-func (t *instanceClient) QueryAudit(ctx context.Context, h util.Headers, input *commondata.ObjQueryInput) (resp *api.BKAPIRsp, err error) {
-	resp = new(api.BKAPIRsp)
-	subPath := fmt.Sprintf("/app/%s", h.OwnerID)
+func (t *instanceClient) QueryAudit(ctx context.Context, ownerID string, h http.Header, input *metadata.QueryInput) (resp *metadata.Response, err error) {
+	resp = new(metadata.Response)
+	subPath := "/app/%s"
 
 	err = t.client.Post().
 		WithContext(ctx).
 		Body(input).
-		SubResource(subPath).
-		WithHeaders(h.ToHeader()).
+		SubResourcef(subPath, ownerID).
+		WithHeaders(h).
+		Do().
+		Into(resp)
+	return
+}
+func (t *instanceClient) QueryAuditLog(ctx context.Context, h http.Header, input *metadata.QueryInput) (resp *metadata.Response, err error) {
+	resp = new(metadata.Response)
+	subPath := "/audit/search"
+
+	err = t.client.Post().
+		WithContext(ctx).
+		Body(input).
+		SubResourcef(subPath).
+		WithHeaders(h).
 		Do().
 		Into(resp)
 	return
 }
 
-func (t *instanceClient) GetInternalModule(ctx context.Context, ownerID, appID string, h util.Headers) (resp *api.BKAPIRsp, err error) {
-	resp = new(api.BKAPIRsp)
-	subPath := fmt.Sprintf("/topo/internal/%s/%s", ownerID, appID)
+func (t *instanceClient) GetInternalModule(ctx context.Context, ownerID, appID string, h http.Header) (resp *metadata.SearchInnterAppTopoResult, err error) {
+	resp = new(metadata.SearchInnterAppTopoResult)
+	subPath := "/topo/internal/%s/%s"
 
 	err = t.client.Get().
 		WithContext(ctx).
 		Body(nil).
-		SubResource(subPath).
-		WithHeaders(h.ToHeader()).
+		SubResourcef(subPath, ownerID, appID).
+		WithHeaders(h).
 		Do().
 		Into(resp)
 	return

@@ -8,14 +8,28 @@
  * See the License for the specific language governing permissions and limitations under the License.
  */
 
-import { $Axios, $axios } from '@/api/axios'
+import $http from '@/api'
 
 const state = {
-
+    activeModel: {}
 }
 
 const getters = {
-
+    activeModel: (state) => state.activeModel,
+    isPublicModel: state => {
+        const metadata = state.activeModel.metadata || {}
+        const label = metadata.label || {}
+        return !label.hasOwnProperty('bk_biz_id')
+    },
+    isInjectable: (state, getters, rootState, rootGetters) => {
+        const model = state.activeModel
+        const isPublicModel = getters.isPublicModel
+        if (!isPublicModel) {
+            return true
+        }
+        return model['bk_classification_id'] === 'bk_biz_topo' || ['set', 'module', 'host', 'biz'].includes(model['bk_obj_id'])
+    },
+    isMainLine: state => state.activeModel['bk_classification_id'] === 'bk_biz_topo'
 }
 
 const actions = {
@@ -27,8 +41,8 @@ const actions = {
      * @param {Object} params 参数
      * @return {promises} promises 对象
      */
-    createObject ({ commit, state, dispatch }, { params }) {
-        return $axios.post(`object`, params)
+    createObject ({ commit, state, dispatch }, { params, config }) {
+        return $http.post('create/object', params, config)
     },
 
     /**
@@ -39,8 +53,8 @@ const actions = {
      * @param {Number} id 被删除的数据记录的id
      * @return {promises} promises 对象
      */
-    deleteObject ({ commit, state, dispatch }, { id }) {
-        return $axios.delete(`object/${id}`)
+    deleteObject ({ commit, state, dispatch }, { id, config }) {
+        return $http.delete(`delete/object/${id}`, config)
     },
 
     /**
@@ -52,8 +66,8 @@ const actions = {
      * @param {Object} params 参数
      * @return {promises} promises 对象
      */
-    updateObject ({ commit, state, dispatch }, { id, params }) {
-        return $axios.put(`object/${id}`, params)
+    updateObject ({ commit, state, dispatch }, { id, params, config }) {
+        return $http.put(`update/object/${id}`, params, config)
     },
 
     /**
@@ -64,8 +78,8 @@ const actions = {
      * @param {Object} params 参数
      * @return {promises} promises 对象
      */
-    searchObjects ({ commit, state, dispatch }, { params }) {
-        return $axios.post(`objects`, params)
+    searchObjects ({ commit, state, dispatch }, { params, config }) {
+        return $http.post('find/object', params, config)
     },
 
     /**
@@ -76,13 +90,15 @@ const actions = {
      * @param {Object} params 参数
      * @return {promises} promises 对象
      */
-    searchObjectTopo ({ commit, state, dispatch }, { params }) {
-        return $axios.post(`objects/topo`, params)
+    searchObjectTopo ({ commit, state, dispatch }, { params, config }) {
+        return $http.post('find/objecttopology', params, config)
     }
 }
 
 const mutations = {
-
+    setActiveModel (state, activeModel) {
+        state.activeModel = activeModel
+    }
 }
 
 export default {

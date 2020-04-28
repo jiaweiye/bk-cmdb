@@ -21,7 +21,7 @@ func GetInstNameField(objID string) string {
 		return BKSetNameField
 	case BKInnerObjIDModule:
 		return BKModuleNameField
-	case BKINnerObjIDObject:
+	case BKInnerObjIDObject:
 		return BKInstNameField
 	case BKInnerObjIDHost:
 		return BKHostNameField
@@ -34,4 +34,51 @@ func GetInstNameField(objID string) string {
 	default:
 		return BKInstNameField
 	}
+}
+
+// GetInstIDField get primary key of object's collection/table
+func GetInstIDField(objType string) string {
+	switch objType {
+	case BKInnerObjIDApp:
+		return BKAppIDField
+	case BKInnerObjIDSet:
+		return BKSetIDField
+	case BKInnerObjIDModule:
+		return BKModuleIDField
+	case BKInnerObjIDObject:
+		return BKInstIDField
+	case BKInnerObjIDHost:
+		return BKHostIDField
+	case BKInnerObjIDProc:
+		return BKProcIDField
+	case BKInnerObjIDPlat:
+		return BKCloudIDField
+	case BKTableNameInstAsst:
+		return BKFieldID
+	case BKTableNameServiceInstance:
+		return BKFieldID
+	case BKTableNameServiceTemplate:
+		return BKFieldID
+	case BKTableNameProcTemplate:
+		return BKFieldID
+	case BKTableNameProcessInstanceRelation:
+		return BKProcessIDField
+	default:
+		return BKInstIDField
+	}
+}
+
+func GetObjByType(objType string) string {
+	switch objType {
+	case BKInnerObjIDApp, BKInnerObjIDSet,
+		BKInnerObjIDModule, BKInnerObjIDProc,
+		BKInnerObjIDHost, BKInnerObjIDPlat:
+		return objType
+	default:
+		return BKInnerObjIDObject
+	}
+}
+
+func IsInnerModel(objType string) bool {
+	return GetObjByType(objType) != BKInnerObjIDObject
 }
